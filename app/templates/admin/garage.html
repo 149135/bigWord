@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block page_title %}停车场配置{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">停车场管理</h1>
+    <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addGarageModal">
+        <i class="fas fa-plus fa-sm text-white-50 me-2"></i>新增停车场
+    </button>
+</div>
+
+<div class="row g-4">
+    {% for garage in garages %}
+    <div class="col-xl-6 col-md-12">
+        <div class="card shadow h-100 border-0">
+            <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded p-2 me-3">
+                        <i class="fas fa-warehouse fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="m-0 font-weight-bold text-primary">{{ garage.name }}</h6>
+                        <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ garage.address or '地址未设置' }}</small>
+                    </div>
+                </div>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink{{ garage.id }}" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in">
+                        <div class="dropdown-header">操作选项:</div>
+                        <a class="dropdown-item" href="#" onclick="openEditModal('{{ garage.id }}', '{{ garage.name }}', '{{ garage.total_spots }}', '{{ garage.hourly_rate }}', '{{ garage.free_minutes }}', '{{ garage.daily_max_fee }}', '{{ garage.address }}', '{{ garage.contact_phone }}', '{{ garage.garage_type }}')">
+                            <i class="fas fa-edit me-2 text-gray-400"></i>编辑信息
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form method="POST" class="d-inline w-100">
+                             <input type="hidden" name="action" value="delete_garage">
+                             <input type="hidden" name="garage_id" value="{{ garage.id }}">
+                             <button type="submit" class="dropdown-item text-danger" onclick="return confirm('确定要删除 {{ garage.name }} 吗？此操作不可恢复！');">
+                                <i class="fas fa-trash me-2"></i>删除停车场
+                             </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-sm-3">
+                        <div class="p-3 bg-light rounded text-center h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-1">类型</div>
+                            <div class="h6 mb-0 fw-bold text-dark">{{ garage.garage_type }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="p-3 bg-light rounded text-center h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-1">总车位</div>
+                            <div class="h6 mb-0 fw-bold text-dark">{{ garage.total_spots }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="p-3 bg-light rounded text-center h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-1">费率</div>
+                            <div class="h6 mb-0 fw-bold text-success">¥{{ garage.hourly_rate }}<small>/h</small></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="p-3 bg-light rounded text-center h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-1">封顶</div>
+                            <div class="h6 mb-0 fw-bold text-warning">¥{{ garage.daily_max_fee }}<small>/天</small></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <div class="small text-muted">
+                        <i class="fas fa-phone-alt me-2"></i>{{ garage.contact_phone or '暂无联系方式' }}
+                    </div>
+                    <div class="small text-muted">
+                        <i class="fas fa-clock me-2"></i>免费时长: <span class="fw-bold">{{ garage.free_minutes }}分钟</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <div class="text-muted mb-3">暂无停车场配置</div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGarageModal">立即创建</button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Garage Modal -->
+<div class="modal fade" id="addGarageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="action" value="add_garage">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>新增停车场</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">停车场名称</label>
+                            <input type="text" name="name" class="form-control" placeholder="例如：商业中心地下车库" required>
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">车库类型</label>
+                            <select name="garage_type" class="form-select">
+                                <option value="室内">室内车库</option>
+                                <option value="露天">露天停车场</option>
+                                <option value="立体">立体车库</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-uppercase">详细地址</label>
+                            <input type="text" name="address" class="form-control" placeholder="请输入具体地址">
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">联系电话</label>
+                            <input type="text" name="contact_phone" class="form-control" placeholder="管理处联系电话">
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">总车位数</label>
+                            <input type="number" name="total_spots" class="form-control" value="100" required>
+                        </div>
+                    </div>
+                    
+                    <h6 class="text-muted small fw-bold text-uppercase mb-3 border-bottom pb-2">计费规则</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small">每小时费率 (元)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" step="0.5" name="hourly_rate" class="form-control" value="5.0" required>
+                            </div>
+                        </div>
+                         <div class="col-md-4">
+                            <label class="form-label small">每日封顶 (元)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" step="1" name="daily_max_fee" class="form-control" value="50">
+                            </div>
+                        </div>
+                         <div class="col-md-4">
+                            <label class="form-label small">免费时长 (分钟)</label>
+                            <div class="input-group">
+                                <input type="number" name="free_minutes" class="form-control" value="30" required>
+                                <span class="input-group-text">分钟</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary px-4">确认创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Garage Modal -->
+<div class="modal fade" id="editGarageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_garage">
+                <input type="hidden" name="garage_id" id="edit_garage_id">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>编辑停车场信息</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                     <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">停车场名称</label>
+                            <input type="text" name="name" id="edit_name" class="form-control" required>
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">车库类型</label>
+                            <select name="garage_type" id="edit_garage_type" class="form-select">
+                                <option value="室内">室内车库</option>
+                                <option value="露天">露天停车场</option>
+                                <option value="立体">立体车库</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-uppercase">详细地址</label>
+                            <input type="text" name="address" id="edit_address" class="form-control">
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">联系电话</label>
+                            <input type="text" name="contact_phone" id="edit_contact_phone" class="form-control">
+                        </div>
+                         <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">总车位数</label>
+                            <input type="number" name="total_spots" id="edit_total_spots" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <h6 class="text-muted small fw-bold text-uppercase mb-3 border-bottom pb-2">计费规则</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small">每小时费率 (元)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" step="0.5" name="hourly_rate" id="edit_hourly_rate" class="form-control" required>
+                            </div>
+                        </div>
+                         <div class="col-md-4">
+                            <label class="form-label small">每日封顶 (元)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" step="1" name="daily_max_fee" id="edit_daily_max_fee" class="form-control">
+                            </div>
+                        </div>
+                         <div class="col-md-4">
+                            <label class="form-label small">免费时长 (分钟)</label>
+                            <div class="input-group">
+                                <input type="number" name="free_minutes" id="edit_free_minutes" class="form-control" required>
+                                <span class="input-group-text">分钟</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-info text-white px-4">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function openEditModal(id, name, spots, rate, free, max_fee, addr, phone, type) {
+        document.getElementById('edit_garage_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_total_spots').value = spots;
+        document.getElementById('edit_hourly_rate').value = rate;
+        document.getElementById('edit_free_minutes').value = free;
+        document.getElementById('edit_daily_max_fee').value = max_fee;
+        document.getElementById('edit_address').value = addr === 'None' ? '' : addr;
+        document.getElementById('edit_contact_phone').value = phone === 'None' ? '' : phone;
+        document.getElementById('edit_garage_type').value = type;
+        new bootstrap.Modal(document.getElementById('editGarageModal')).show();
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

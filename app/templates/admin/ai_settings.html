@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block page_title %}AI 助手配置{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow mb-4">
+             <div class="card-header py-3 bg-white d-flex align-items-center">
+                <i class="fas fa-robot text-primary me-2 fa-lg"></i>
+                <h6 class="m-0 font-weight-bold text-primary">智能停车助手 (Kimi/Moonshot AI)</h6>
+            </div>
+            <div class="card-body">
+                <!-- 配置提示 -->
+                <div class="alert alert-info d-flex align-items-start mb-4" role="alert">
+                    <i class="fas fa-info-circle me-3 mt-1"></i>
+                    <div>
+                        <strong>配置说明</strong>
+                        <p class="mb-2 small">
+                            本系统集成了 Moonshot AI (Kimi) 智能客服功能。配置前请：
+                        </p>
+                        <ol class="mb-2 small ps-3">
+                            <li>访问 <a href="https://platform.moonshot.cn/" target="_blank" class="alert-link">Moonshot AI 开放平台</a> 注册账号</li>
+                            <li>在控制台创建 API Key</li>
+                            <li>复制 API Key 并填写到下方表单</li>
+                        </ol>
+                        <a href="{{ url_for('static', filename='../docs/AI_CONFIG.md') }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="fas fa-book me-1"></i>查看详细配置指南
+                        </a>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    <input type="hidden" name="action" value="update_ai">
+                    
+                    <!-- Basic Config -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">基础连接</h5>
+                        <div class="row">
+                             <div class="col-md-8">
+                                <label class="form-label fw-bold">API Key (Moonshot AI)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                    <input type="password" name="api_key" class="form-control" value="{{ settings.moonshot_api_key or '' }}" placeholder="sk-..." required>
+                                </div>
+                                <div class="form-text">请从 Moonshot AI 开放平台获取您的 API Key。</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">模型版本</label>
+                                <select name="ai_model" class="form-select">
+                                    <option value="moonshot-v1-8k" {% if settings.ai_model == 'moonshot-v1-8k' %}selected{% endif %}>moonshot-v1-8k (推荐)</option>
+                                    <option value="moonshot-v1-32k" {% if settings.ai_model == 'moonshot-v1-32k' %}selected{% endif %}>moonshot-v1-32k</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Persona Config -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">角色设定 (Persona)</h5>
+                         <div class="mb-3">
+                            <label class="form-label fw-bold">系统提示词 (System Prompt)</label>
+                            <textarea name="ai_role_prompt" class="form-control" rows="5">{{ settings.ai_role_prompt }}</textarea>
+                            <div class="form-text">定义 AI 助手的身份和职责。例如：“你是一个严谨的财务助手”或“你是一个热情的客服”。</div>
+                        </div>
+                        
+                        <!-- Role Presets (Mock) -->
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-muted">快速应用预设：</label>
+                            <button type="button" class="btn btn-sm btn-outline-info me-2" onclick="setPrompt('客服')">客服模式</button>
+                            <button type="button" class="btn btn-sm btn-outline-warning me-2" onclick="setPrompt('运维')">运维模式</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="setPrompt('营销')">营销模式</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-outline-success" onclick="testAIConnection()">
+                            <i class="fas fa-vial me-2"></i>测试连接
+                        </button>
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="fas fa-save me-2"></i>保存配置
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- 测试结果显示区域 -->
+                <div id="testResult" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setPrompt(type) {
+        const area = document.querySelector('textarea[name="ai_role_prompt"]');
+        if(type === '客服') {
+            area.value = "你是一个热情、耐心的智能停车客服。请用礼貌的语气回答用户的停车费率、车位查询等问题。如果在回答中遇到不确定的信息，请建议用户联系人工客服。";
+        } else if (type === '运维') {
+            area.value = "你是一个专业的系统运维专家。你的职责是监控系统状态，分析异常日志，并给出专业的技术建议。回答请简洁明了，多使用技术术语。";
+        } else if (type === '营销') {
+            area.value = "你是一个富有创意的营销助手。在回答用户问题时，请适时推荐我们的月租套餐和VIP会员服务，强调性价比和尊贵体验。";
+        }
+    }
+
+    // 测试 AI 连接
+    function testAIConnection() {
+        const resultDiv = document.getElementById('testResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-spinner fa-spin me-2"></i>正在测试连接...
+            </div>
+        `;
+
+        fetch('/api/kimi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: '你好，请简单介绍一下自己' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.reply && !data.reply.includes('不可用') && !data.reply.includes('请先在')) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i><strong>连接成功！</strong>
+                        <p class="mb-0 mt-2 small"><strong>AI 回复：</strong>${data.reply}</p>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i><strong>连接失败</strong>
+                        <p class="mb-0 mt-2 small">${data.reply}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(err => {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i><strong>测试异常</strong>
+                    <p class="mb-0 mt-2 small">网络错误或服务不可用，请检查配置后重试。</p>
+                </div>
+            `;
+        });
+    }
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+

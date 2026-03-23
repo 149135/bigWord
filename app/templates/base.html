@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}智能停车管理系统{% endblock %}</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/5.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdn.staticfile.org/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body id="page-top">
+
+    {% if current_user.is_authenticated %}
+    <!-- Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="sidebar list-unstyled">
+            <a class="brand" href="{{ url_for('index') }}">
+                <div class="sidebar-brand-icon">
+                    <i class="fas fa-parking"></i>
+                </div>
+                <div class="mx-3">智泊系统 <sup>Pro</sup></div>
+            </a>
+
+            <hr class="sidebar-divider my-0">
+
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'index' else '' }}" href="{{ url_for('index') }}">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>控制台</span>
+                </a>
+            </li>
+
+            <div class="sidebar-heading">业务操作</div>
+
+            <li class="nav-item">
+                 <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#entryModal">
+                    <i class="fas fa-fw fa-sign-in-alt"></i>
+                    <span>车辆入场</span>
+                </a>
+            </li>
+             <li class="nav-item">
+                 <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#exitModal">
+                    <i class="fas fa-fw fa-sign-out-alt"></i>
+                    <span>车辆出场</span>
+                </a>
+            </li>
+
+            <div class="sidebar-heading">数据分析</div>
+
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'history' else '' }}" href="{{ url_for('history') }}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>数据追溯</span>
+                </a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'analysis' else '' }}" href="{{ url_for('analysis') }}">
+                    <i class="fas fa-fw fa-chart-line"></i>
+                    <span>数据大屏</span>
+                </a>
+            </li>
+
+            <div class="sidebar-heading">系统管理</div>
+
+             <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'whitelist_view' else '' }}" href="{{ url_for('whitelist_view') }}">
+                    <i class="fas fa-fw fa-list-alt"></i>
+                    <span>白名单维护</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'garage_settings' else '' }}" href="{{ url_for('garage_settings') }}">
+                    <i class="fas fa-fw fa-cogs"></i>
+                    <span>停车场配置</span>
+                </a>
+            </li>
+             <li class="nav-item">
+                 <a class="nav-link {{ 'active' if request.endpoint == 'user_manage' else '' }}" href="{{ url_for('user_manage') }}">
+                     <i class="fas fa-fw fa-users"></i>
+                     <span>账号管理</span>
+                 </a>
+             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'ai_settings' else '' }}" href="{{ url_for('ai_settings') }}">
+                    <i class="fas fa-fw fa-robot"></i>
+                    <span>AI 助手配置</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'notice_manage' else '' }}" href="{{ url_for('notice_manage') }}">
+                    <i class="fas fa-fw fa-bullhorn"></i>
+                    <span>系统公告</span>
+                </a>
+            </li>
+
+            <!-- Toggle Button -->
+            <li class="mt-auto mb-4">
+                <button class="sidebar-toggle-btn" id="sidebarToggle">
+                    <i class="fas fa-angle-left"></i>
+                </button>
+            </li>
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div class="main-content">
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand topbar mb-4 static-top">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3 text-dark">
+                    <i class="fa fa-bars"></i>
+                </button>
+
+                <h5 class="m-0 font-weight-bold text-dark ms-3">{% block page_title %}Dashboard{% endblock %}</h5>
+
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- Nav Item - User Information -->
+                    <li class="nav-item dropdown no-arrow">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <span class="mr-2 d-none d-lg-inline text-dark small fw-bold">{{ current_user.username }}</span>
+                            <img class="img-profile rounded-circle ms-2" src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=6366f1&color=fff" style="height: 32px; width: 32px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 animated--grow-in p-2 rounded-xl">
+                            <li><a class="dropdown-item rounded-sm" href="{{ url_for('garage_settings') }}"><i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i> 设置</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item rounded-sm text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2"></i> 退出</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            <!-- End of Topbar -->
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid px-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+                                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <!-- Layout for Login (Full Page) -->
+         {% block login_content %}{% endblock %}
+    {% endif %}
+
+
+    <!-- ENTRY MODAL -->
+    <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content overflow-hidden" style="height: 80vh;">
+                <div class="modal-header bg-white border-bottom py-3">
+                    <h5 class="modal-title text-dark"><i class="fas fa-sign-in-alt me-2 text-success"></i>车辆入场终端</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 h-100 overflow-hidden">
+                     <!-- Content loaded via include or simplified here -->
+                     <div class="row g-0 h-100">
+                         <div class="col-md-8 bg-black position-relative h-100 d-flex align-items-center justify-content-center">
+                             <img id="entry-cam-feed" src="about:blank" data-feed-src="{{ url_for('video_feed', mode='entry') }}" class="w-100 h-100" style="object-fit: contain;">
+                             <!-- File Input Hidden by Default -->
+                             <div id="entry-file-input-area" class="d-none position-absolute top-50 start-50 translate-middle text-center w-75 p-5 bg-white rounded-xl shadow-lg">
+                                 <h5 class="mb-4 text-dark"><i class="fas fa-cloud-upload-alt text-success mb-2 display-4 d-block"></i> 上传入场抓拍</h5>
+                                 <input type="file" id="entry-upload-modal" class="form-control form-control-lg mb-4" accept="image/*">
+                                 <div class="border-2 border-dashed rounded bg-light d-flex align-items-center justify-content-center" style="height: 240px;">
+                                     <img id="entry-preview-modal" class="img-fluid rounded" style="max-height: 100%; display:none;">
+                                     <span class="text-muted" id="entry-placeholder-text">预览区域</span>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="col-md-4 p-4 d-flex flex-column bg-white h-100 border-start">
+                             <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                                 <h6 class="text-uppercase text-muted fw-bold mb-3 tracking-wider">识别结果</h6>
+                                 <div class="card shadow-none bg-light w-100 mb-4 border-0">
+                                     <div class="card-body py-4 d-flex flex-column align-items-center">
+                                         <div id="entry-plate-display" class="display-5 fw-bold text-dark font-monospace mb-0">Waiting...</div>
+                                         <img id="entry-result-image" class="img-fluid rounded mt-3 shadow-sm" style="display:none; max-height: 200px;">
+                                     </div>
+                                 </div>
+                                 <div id="entry-result-msg" class="w-100"></div>
+                             </div>
+                             
+                             <div class="d-grid gap-3 mb-2">
+                                 <button class="btn btn-success btn-lg shadow-soft py-3" onclick="triggerEntryModal()">
+                                     <i class="fas fa-camera me-2"></i> 确认入场
+                                 </button>
+                                 <button class="btn btn-light btn-lg text-muted" data-bs-dismiss="modal">取消</button>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXIT MODAL -->
+    <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content overflow-hidden" style="height: 80vh;">
+                <div class="modal-header bg-white border-bottom py-3">
+                    <h5 class="modal-title text-dark"><i class="fas fa-sign-out-alt me-2 text-danger"></i>车辆出场终端</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 h-100 overflow-hidden">
+                     <div class="row g-0 h-100">
+                         <div class="col-md-8 bg-black position-relative h-100 d-flex align-items-center justify-content-center">
+                             <img id="exit-cam-feed" src="about:blank" data-feed-src="{{ url_for('video_feed', mode='exit') }}" class="w-100 h-100" style="object-fit: contain;">
+                              <div id="exit-file-input-area" class="d-none position-absolute top-50 start-50 translate-middle text-center w-75 p-5 bg-white rounded-xl shadow-lg">
+                                 <h5 class="mb-4 text-dark"><i class="fas fa-money-check-alt text-danger mb-2 display-4 d-block"></i> 上传出场抓拍</h5>
+                                 <input type="file" id="exit-upload-modal" class="form-control form-control-lg mb-4" accept="image/*">
+                                 <div class="border-2 border-dashed rounded bg-light d-flex align-items-center justify-content-center" style="height: 240px;">
+                                     <img id="exit-preview-modal" class="img-fluid rounded" style="max-height: 100%; display:none;">
+                                     <span class="text-muted" id="exit-placeholder-text">预览区域</span>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="col-md-4 p-4 d-flex flex-column bg-white h-100 border-start">
+                             <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                                 <h6 class="text-uppercase text-muted fw-bold mb-3 tracking-wider">待结算车牌</h6>
+                                <div class="card shadow-none bg-light w-100 mb-4 border-0">
+                                    <div class="card-body py-4 d-flex flex-column align-items-center">
+                                        <div id="exit-plate-display" class="display-5 fw-bold text-dark font-monospace mb-0">Waiting...</div>
+                                        <img id="exit-result-image" class="img-fluid rounded mt-3 shadow-sm" style="display:none; max-height: 200px;">
+                                    </div>
+                                </div>
+                                <div id="exit-result-msg" class="w-100"></div>
+                             </div>
+                             
+                             <div class="d-grid gap-3 mb-2">
+                                 <button class="btn btn-danger btn-lg shadow-soft py-3" onclick="triggerExitModal()">
+                                     <i class="fas fa-money-bill-wave me-2"></i> 结算放行
+                                 </button>
+                                 <button class="btn btn-light btn-lg text-muted" data-bs-dismiss="modal">取消</button>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Widget -->
+    {% if current_user.is_authenticated %}
+    <div class="chat-widget position-fixed bottom-0 end-0 m-4" style="z-index: 1050;">
+        <div class="chat-box shadow-lg mb-3 rounded-xl overflow-hidden border-0" id="chatBox" style="display: none; width: 400px; height: 600px; max-height: 80vh; background: white; flex-direction: column; animation: slideInUp 0.3s; transition: all 0.3s;">
+            <div class="chat-header p-3 bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="fas fa-robot me-2"></i>AI 停车助手</span>
+                <div>
+                    <button type="button" class="btn btn-sm btn-link text-white p-1" onclick="toggleChatSize()" title="切换大小">
+                        <i class="fas fa-expand-alt" id="chatSizeIcon"></i>
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" onclick="toggleChat()"></button>
+                </div>
+            </div>
+            <div class="chat-messages p-4 flex-grow-1 bg-light" id="chatMessages" style="overflow-y: auto; overflow-x: hidden; max-height: calc(100% - 120px);">
+                 <div class="d-flex mb-3 fade-in">
+                    <div class="ai-message bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="ai-avatar bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                <i class="fas fa-robot text-primary" style="font-size: 14px;"></i>
+                            </div>
+                            <small class="text-primary fw-bold">AI 助手</small>
+                        </div>
+                        <div class="text-dark" style="line-height: 1.8; font-size: 14px;">您好！我是您的智能停车助手。请问有什么可以帮您？</div>
+                        <div class="text-muted mt-2" style="line-height: 1.5; font-size: 12px;">
+                            <i class="fas fa-info-circle me-1"></i>提示：如遇服务不可用，请在 
+                            <a href="{{ url_for('ai_settings') }}" target="_blank" class="text-decoration-none">AI 助手配置</a> 中设置 API Key
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input p-3 bg-white border-top d-flex align-items-center">
+                <input type="text" id="chatInput" class="form-control border-0 bg-light me-2 rounded-pill px-4" placeholder="输入问题..." onkeypress="handleChatKey(event)">
+                <button class="btn btn-primary rounded-circle shadow-sm" style="width: 40px; height: 40px; padding: 0;" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <button class="chat-button btn btn-primary btn-lg rounded-circle shadow-lg d-flex align-items-center justify-content-center position-relative" onclick="toggleChat()" style="width: 60px; height: 60px;">
+            <i class="fas fa-comment-dots fa-lg"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle chat-badge">
+                <span class="visually-hidden">New alerts</span>
+            </span>
+        </button>
+    </div>
+    <style>
+        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .chat-button { transition: transform 0.2s; }
+        .chat-button:hover { transform: scale(1.1); }
+        .chat-badge { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .bg-gradient-primary { background: linear-gradient(45deg, #4e73df 0%, #224abe 100%); }
+        
+        /* 聊天框优化 */
+        .chat-messages {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; /* iOS 流畅滚动 */
+        }
+        
+        /* AI 消息样式 */
+        .ai-message {
+            max-width: 80%;
+            word-break: break-word;
+            animation: slideInLeft 0.3s ease-out;
+        }
+        
+        /* 用户消息样式 */
+        .user-message {
+            word-break: break-word;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        /* 淡入动画 */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* AI 头像 */
+        .ai-avatar {
+            flex-shrink: 0;
+        }
+        
+        /* 代码块样式 */
+        .ai-message code {
+            font-size: 13px;
+        }
+        
+        /* 段落间距 */
+        .ai-message p {
+            margin-bottom: 8px;
+        }
+        .ai-message p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* 滚动条样式 */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.staticfile.org/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.3.1/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.staticfile.org/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script>
+        // Sidebar Toggle
+        $("#sidebarToggle, #sidebarToggleTop").on('click', function(e) {
+            $("body").toggleClass("sidebar-toggled");
+            $(".sidebar").toggleClass("toggled");
+            if ($(".sidebar").hasClass("toggled")) {
+                $('.sidebar .collapse').collapse('hide');
+                $('#sidebarToggle i').removeClass('fa-angle-left').addClass('fa-angle-right');
+            } else {
+                $('#sidebarToggle i').removeClass('fa-angle-right').addClass('fa-angle-left');
+            }
+        });
+
+        // Modal Logic
+        // Global mode state, defaults to 'file' (Simulation)
+        let globalInputMode = localStorage.getItem('inputMode') || 'file';
+
+        function setGlobalInputMode(mode) {
+            globalInputMode = mode;
+            localStorage.setItem('inputMode', mode);
+            updateModeUI();
+        }
+
+        function updateModeUI() {
+            try {
+                // Update Toggle Buttons in Control Center (if present on page)
+                if(globalInputMode === 'file') {
+                    $('#btn-mode-sim').addClass('active');
+                    $('#btn-mode-real').removeClass('active');
+                } else {
+                    $('#btn-mode-sim').removeClass('active');
+                    $('#btn-mode-real').addClass('active');
+                }
+
+                // Update Modals based on global state
+                ['entry', 'exit'].forEach(type => {
+                    const img = $(`#${type}-cam-feed`);
+                    if (img.length === 0) return; // Guard clause
+
+                    if(globalInputMode === 'file') {
+                        img.attr('src', 'about:blank'); // Stop stream
+                        img.addClass('opacity-25');
+                        $(`#${type}-file-input-area`).removeClass('d-none');
+                    } else {
+                        const feedSrc = img.data('feed-src');
+                        // Only update if not already set to avoid flickering
+                        if (img.attr('src') !== feedSrc) {
+                            img.attr('src', feedSrc);
+                        }
+                        img.removeClass('opacity-25');
+                        $(`#${type}-file-input-area`).addClass('d-none');
+                    }
+                });
+            } catch (e) {
+                console.error("updateModeUI failed:", e);
+            }
+        }
+        
+        // Initialize UI on load
+        $(document).ready(function() {
+            console.log("App initialized");
+            updateModeUI();
+            
+            // Reset modals when closed
+            $('#entryModal').on('hidden.bs.modal', function () {
+                $('#entry-plate-display').text('Waiting...');
+                $('#entry-result-image').hide();
+                $('#entry-result-msg').empty();
+                $('#entry-upload-modal').val('');
+                $('#entry-preview-modal').hide();
+                $('#entry-placeholder-text').show();
+            });
+            
+            $('#exitModal').on('hidden.bs.modal', function () {
+                $('#exit-plate-display').text('Waiting...');
+                $('#exit-result-image').hide();
+                $('#exit-result-msg').empty();
+                $('#exit-upload-modal').val('');
+                $('#exit-preview-modal').hide();
+                $('#exit-placeholder-text').show();
+            });
+        });
+
+        // Deprecated local toggle
+        function toggleCam(type) {
+            console.warn("toggleCam is deprecated, use setGlobalInputMode");
+        }
+        
+        // Manual plate input retry
+        function retryWithManualPlate() {
+            const manualPlate = $('#manual-plate-input').val().trim();
+            if (!manualPlate) {
+                alert('请先输入车牌号');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('plate', manualPlate);
+            
+            // Check if there's an uploaded image
+            const fileInput = document.getElementById('entry-upload-modal');
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]);
+            }
+            
+            $('#entry-plate-display').html('<i class="fas fa-spinner fa-spin"></i> 处理中...');
+            $('#entry-result-msg').empty();
+            
+            $.ajax({
+                url: '/api/process_entry',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                    if(res.success) {
+                        $('#entry-plate-display').text(res.plate || res.message);
+                        if (res.image_url) {
+                            $('#entry-result-image').attr('src', res.image_url).show();
+                        }
+                        $('#entry-result-msg').html(`<div class="alert alert-success">${res.message}</div>`);
+                        
+                        setTimeout(() => {
+                            $('#entry-plate-display').text('Waiting...');
+                            $('#entry-result-image').hide();
+                            $('#entry-result-msg').empty();
+                            $('#entry-upload-modal').val('');
+                            $('#entry-preview-modal').hide();
+                            $('#entry-placeholder-text').show();
+                            $('#manual-plate-input').val('');
+                        }, 2000);
+                    } else {
+                        $('#entry-result-msg').html(`<div class="alert alert-danger">${res.message}</div>`);
+                    }
+                }
+            });
+        }
+        
+        // Manual plate input retry for exit
+        function retryExitWithManualPlate() {
+            const manualPlate = $('#manual-exit-plate-input').val().trim();
+            if (!manualPlate) {
+                alert('请先输入车牌号');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('plate', manualPlate);
+            
+            const fileInput = document.getElementById('exit-upload-modal');
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]);
+            }
+            
+            $('#exit-plate-display').html('<i class="fas fa-spinner fa-spin"></i> 处理中...');
+            $('#exit-result-msg').empty();
+            
+            $.ajax({
+                url: '/api/process_exit',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                    if(res.success) {
+                        $('#exit-plate-display').text(res.plate || "已放行");
+                        if (res.image_url) {
+                            $('#exit-result-image').attr('src', res.image_url).show();
+                        }
+                        $('#exit-result-msg').html(`
+                            <div class="alert alert-success">
+                                <h5>¥${res.fee}</h5>
+                                <small>${res.message}</small>
+                            </div>
+                        `);
+                        
+                        setTimeout(() => {
+                            $('#exit-plate-display').text('Waiting...');
+                            $('#exit-result-image').hide();
+                            $('#exit-result-msg').empty();
+                            $('#exit-upload-modal').val('');
+                            $('#exit-preview-modal').hide();
+                            $('#exit-placeholder-text').show();
+                            $('#manual-exit-plate-input').val('');
+                        }, 3000);
+                    } else {
+                        $('#exit-result-msg').html(`<div class="alert alert-danger">${res.message}</div>`);
+                    }
+                }
+            });
+        }
+
+        // Previews
+        ['entry', 'exit'].forEach(type => {
+            $(`#${type}-upload-modal`).change(function(){
+                const file = this.files[0];
+                if (file){
+                    let reader = new FileReader();
+                    reader.onload = function(event){
+                        $(`#${type}-preview-modal`).attr('src', event.target.result).show();
+                        $(`#${type}-placeholder-text`).hide();
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        function triggerEntryModal() {
+            const formData = new FormData();
+            
+            // Check Global Mode
+            if(globalInputMode === 'file') {
+                const fileInput = document.getElementById('entry-upload-modal');
+                if(fileInput.files.length === 0) {
+                    alert("请先选择或者拍摄车辆图片");
+                    return;
+                }
+                formData.append('image', fileInput.files[0]);
+            } else {
+                // Camera mode: In a real app, you'd capture the canvas to blob here.
+                // For this demo, we'll prompt as fallback since camera capture isn't fully implemented in JS
+                let manualPlate = prompt("摄像头模式下请输入车牌:", "苏A88888");
+                if(manualPlate) formData.append('plate', manualPlate);
+                else return;
+            }
+
+            // UI Loading
+            $('#entry-plate-display').html('<i class="fas fa-spinner fa-spin"></i> 识别中...');
+            $('#entry-result-msg').empty();
+
+            $.ajax({
+                url: '/api/process_entry',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                    if(res.success) {
+                        $('#entry-plate-display').text(res.plate || res.message);
+                        
+                        // Show result image if available
+                        if (res.image_url) {
+                            $('#entry-result-image').attr('src', res.image_url).show();
+                        } else {
+                            $('#entry-result-image').hide();
+                        }
+
+                        $('#entry-result-msg').html(`<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${res.message}</div>`);
+                        
+                        // Auto-reset only on success for next vehicle (延长到5秒)
+                        setTimeout(() => {
+                            $('#entry-plate-display').text('Waiting...');
+                            $('#entry-result-image').hide();
+                            $('#entry-result-msg').empty();
+                            $('#entry-upload-modal').val('');
+                            $('#entry-preview-modal').hide();
+                            $('#entry-placeholder-text').show();
+                        }, 5000);
+                    } else {
+                        // Logic update: If plate was detected (even if duplicate), show it.
+                        if (res.plate) {
+                             $('#entry-plate-display').text(res.plate);
+                             
+                             if (res.image_url) {
+                                $('#entry-result-image').attr('src', res.image_url).show();
+                             } else {
+                                $('#entry-result-image').hide();
+                             }
+
+                             $('#entry-result-msg').html(`<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> ${res.message}</div>`);
+                             // Keep form as-is, allow user to retry with same image or upload new one
+                        } else {
+                            $('#entry-plate-display').text("识别失败");
+                            $('#entry-result-image').hide();
+                            $('#entry-result-msg').html(`
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle"></i> ${res.message}
+                                    <div class="mt-2">
+                                        <input type="text" id="manual-plate-input" class="form-control" placeholder="可选：手动输入车牌号">
+                                        <button class="btn btn-sm btn-warning mt-2" onclick="retryWithManualPlate()">
+                                            <i class="fas fa-keyboard me-1"></i> 使用手动输入重试
+                                        </button>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    }
+                },
+                error: function() {
+                    $('#entry-plate-display').text("Error");
+                    $('#entry-result-msg').html(`<div class="alert alert-danger">系统连接失败</div>`);
+                }
+            });
+        }
+
+        function triggerExitModal() {
+             const formData = new FormData();
+             
+             if(globalInputMode === 'file') {
+                const fileInput = document.getElementById('exit-upload-modal');
+                if(fileInput.files.length === 0) {
+                    // Fallback for manual exit if no image
+                    let manualPlate = prompt("请输入出场车牌 (或上传图片识别):", "");
+                    if(manualPlate) {
+                        formData.append('plate', manualPlate);
+                    } else {
+                        return; 
+                    }
+                } else {
+                    formData.append('image', fileInput.files[0]);
+                }
+            } else {
+                 let manualPlate = prompt("请输入出场车牌:", "苏A88888");
+                 if(manualPlate) formData.append('plate', manualPlate);
+                 else return;
+            }
+             
+             $('#exit-plate-display').html('<i class="fas fa-spinner fa-spin"></i> 结算中...');
+             $('#exit-result-msg').empty();
+
+             $.ajax({
+                url: '/api/process_exit',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                     if(res.success) {
+                         $('#exit-plate-display').text(res.plate || "已放行");
+                         
+                         if (res.image_url) {
+                            $('#exit-result-image').attr('src', res.image_url).show();
+                         } else {
+                            $('#exit-result-image').hide();
+                         }
+
+                         $('#exit-result-msg').html(`
+                            <div class="alert alert-success">
+                                <h5 class="alert-heading">¥${res.fee}</h5>
+                                <hr>
+                                <small>停车时长: ${res.duration}</small><br>
+                                <small>${res.message}</small>
+                            </div>
+                         `);
+                         
+                         // Auto-reset only on success for next vehicle (延长到5秒)
+                         setTimeout(() => {
+                             $('#exit-plate-display').text('Waiting...');
+                             $('#exit-result-image').hide();
+                             $('#exit-result-msg').empty();
+                             $('#exit-upload-modal').val('');
+                             $('#exit-preview-modal').hide();
+                             $('#exit-placeholder-text').show();
+                         }, 5000);
+                     } else {
+                         // Show plate if detected
+                         if (res.plate) {
+                             $('#exit-plate-display').text(res.plate);
+                             
+                             if (res.image_url) {
+                                $('#exit-result-image').attr('src', res.image_url).show();
+                             } else {
+                                $('#exit-result-image').hide();
+                             }
+                             
+                             $('#exit-result-msg').html(`<div class="alert alert-danger">${res.message}</div>`);
+                             // Keep form as-is, allow user to retry with same image or upload new one
+                         } else {
+                             // Recognition failed
+                             $('#exit-plate-display').text("需人工");
+                             $('#exit-result-image').hide();
+                             $('#exit-result-msg').html(`<div class="alert alert-danger">${res.message}</div>`);
+                         }
+                         
+                         // Show manual input option only if recognition failed
+                         if (!res.plate) {
+                             $('#exit-result-msg').append(`
+                                <div class="mt-2">
+                                    <input type="text" id="manual-exit-plate-input" class="form-control" placeholder="可选：手动输入车牌号">
+                                    <button class="btn btn-sm btn-warning mt-2" onclick="retryExitWithManualPlate()">
+                                        <i class="fas fa-keyboard me-1"></i> 使用手动输入重试
+                                    </button>
+                                </div>
+                             `);
+                         }
+                     }
+                },
+                error: function() {
+                     $('#exit-result-msg').html(`<div class="alert alert-danger">系统错误</div>`);
+                }
+            });
+        }
+
+        // Chat Logic
+        let chatExpanded = false;
+        function toggleChat() {
+            const box = document.getElementById('chatBox');
+            box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+        }
+        
+        function toggleChatSize() {
+            const box = document.getElementById('chatBox');
+            const icon = document.getElementById('chatSizeIcon');
+            chatExpanded = !chatExpanded;
+            
+            if (chatExpanded) {
+                // 放大模式
+                box.style.width = '90vw';
+                box.style.height = '90vh';
+                box.style.maxHeight = '90vh';
+                box.style.position = 'fixed';
+                box.style.top = '50%';
+                box.style.left = '50%';
+                box.style.transform = 'translate(-50%, -50%)';
+                box.style.margin = '0';
+                icon.className = 'fas fa-compress-alt';
+            } else {
+                // 正常模式
+                box.style.width = '400px';
+                box.style.height = '600px';
+                box.style.maxHeight = '80vh';
+                box.style.position = 'relative';
+                box.style.top = 'auto';
+                box.style.left = 'auto';
+                box.style.transform = 'none';
+                box.style.margin = '';
+                icon.className = 'fas fa-expand-alt';
+            }
+            
+            // 滚动到底部
+            const chatDiv = document.getElementById('chatMessages');
+            setTimeout(() => { chatDiv.scrollTop = chatDiv.scrollHeight; }, 100);
+        }
+        
+        function handleChatKey(e) { if(e.key === 'Enter') sendChat(); }
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if(!msg) return;
+            
+            const chatDiv = document.getElementById('chatMessages');
+            chatDiv.innerHTML += `
+                <div class="d-flex justify-content-end mb-3 fade-in">
+                    <div class="user-message bg-primary text-white p-3 rounded-3 shadow-sm" style="max-width: 75%;">
+                        <div style="line-height: 1.8; font-size: 14px; word-break: break-word;">${msg.replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>`;
+            input.value = '';
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            fetch('/api/kimi', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: msg})
+            })
+            .then(res => res.json())
+            .then(data => {
+                // 处理换行符和文本格式
+                let formattedReply = data.reply
+                    .replace(/\n\n/g, '</p><p style="margin-top: 12px;">')  // 段落分隔
+                    .replace(/\n/g, '<br>')  // 单个换行
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // **粗体**
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')  // *斜体*
+                    .replace(/`(.*?)`/g, '<code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');  // `代码`
+                
+                // 包裹在段落标签中
+                formattedReply = '<p style="margin: 0;">' + formattedReply + '</p>';
+                
+                chatDiv.innerHTML += `
+                <div class="d-flex mb-3 fade-in">
+                    <div class="ai-message bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="ai-avatar bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                <i class="fas fa-robot text-primary" style="font-size: 14px;"></i>
+                            </div>
+                            <small class="text-primary fw-bold">AI 助手</small>
+                        </div>
+                        <div class="text-dark" style="line-height: 1.8; font-size: 14px;">${formattedReply}</div>
+                    </div>
+                </div>`;
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

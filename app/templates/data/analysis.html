@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block page_title %}数据分析中心{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Key Metrics -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总营收 (累计)</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-revenue">¥ 0</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-coins fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">今日进场</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-entries">0 辆</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-car-side fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+         <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">车位利用率</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-utilization">0%</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-percentage fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+         <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">VIP车辆</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-vip">0 个</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-crown fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Traffic Chart -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">流量趋势 (近7天)</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="height: 350px;">
+                    <canvas id="trafficAnalysisChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Distribution Chart -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">费用区间分布</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pt-4 pb-2" style="height: 300px;">
+                    <canvas id="feeDistributionChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                    <span class="mr-2"><i class="fas fa-circle text-success"></i> 免费 (0元)</span>
+                    <span class="mr-2"><i class="fas fa-circle text-info"></i> 低费 (0-20元)</span>
+                    <span class="mr-2"><i class="fas fa-circle text-warning"></i> 中费 (20-50元)</span>
+                    <span class="mr-2"><i class="fas fa-circle text-danger"></i> 高费 (>50元)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Peak Hours Heatmap (Mock) -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">时段热力分析</h6>
+    </div>
+    <div class="card-body">
+         <div class="table-responsive">
+             <table class="table table-sm text-center table-bordered">
+                 <thead>
+                     <tr>
+                         <th>时段</th>
+                         <th>08:00</th>
+                         <th>10:00</th>
+                         <th>12:00</th>
+                         <th>14:00</th>
+                         <th>16:00</th>
+                         <th>18:00</th>
+                         <th>20:00</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     <tr>
+                         <td>热度</td>
+                         <td class="bg-success text-white">低</td>
+                         <td class="bg-warning text-dark">中</td>
+                         <td class="bg-success text-white">低</td>
+                         <td class="bg-warning text-dark">中</td>
+                         <td class="bg-danger text-white">高</td>
+                         <td class="bg-danger text-white">高</td>
+                         <td class="bg-warning text-dark">中</td>
+                     </tr>
+                 </tbody>
+             </table>
+         </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load Stats and Charts
+    fetch('/api/stats').then(r=>r.json()).then(data => {
+        // Update Key Metrics
+        $('#stat-revenue').text('¥ ' + data.total_revenue.toLocaleString());
+        $('#stat-entries').text(data.today_entries + ' 辆');
+        $('#stat-utilization').text(data.utilization + '%');
+        $('#stat-vip').text(data.vip_count + ' 个');
+        
+        // Traffic Chart
+        const ctx = document.getElementById('trafficAnalysisChart');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.traffic_dates,
+                datasets: [{
+                    label: '入场车辆',
+                    data: data.traffic_counts,
+                    backgroundColor: "#4e73df",
+                    hoverBackgroundColor: "#2e59d9",
+                    borderColor: "#4e73df",
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Fee Distribution Chart - Real Data
+        fetch('/api/fee_distribution').then(r=>r.json()).then(feeData => {
+            const ctxPie = document.getElementById('feeDistributionChart');
+            new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ["免费", "0-20元", "20-50元", ">50元"],
+                    datasets: [{
+                        data: [feeData.free, feeData.low, feeData.medium, feeData.high],
+                        backgroundColor: ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                        hoverBackgroundColor: ['#17a673', '#2c9faf', '#dda20a', '#be2617'],
+                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    }
+                },
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+
+
+
+
+
+

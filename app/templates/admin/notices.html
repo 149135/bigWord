@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block page_title %}系统公告管理{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4 border-0">
+    <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-bullhorn me-2"></i>系统公告管理</h6>
+        <button class="btn btn-primary btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#addNoticeModal">
+            <i class="fas fa-plus me-1"></i> 发布公告
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0">ID</th>
+                        <th class="border-0">标题</th>
+                        <th class="border-0">内容</th>
+                        <th class="border-0">类型</th>
+                        <th class="border-0">状态</th>
+                        <th class="border-0">发布时间</th>
+                        <th class="border-0 text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notice in notices %}
+                    <tr>
+                        <td>{{ notice.id }}</td>
+                        <td class="fw-bold">{{ notice.title }}</td>
+                        <td class="small text-muted" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ notice.content }}
+                        </td>
+                        <td>
+                            {% if notice.notice_type == 'warning' %}
+                                <span class="badge bg-warning">警告</span>
+                            {% elif notice.notice_type == 'success' %}
+                                <span class="badge bg-success">成功</span>
+                            {% elif notice.notice_type == 'danger' %}
+                                <span class="badge bg-danger">重要</span>
+                            {% else %}
+                                <span class="badge bg-info">信息</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if notice.is_active %}
+                                <span class="badge bg-success rounded-pill">显示中</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill">已隐藏</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ notice.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editNotice({{ notice.id }}, '{{ notice.title }}', '{{ notice.content }}', '{{ notice.notice_type }}', {{ notice.is_active|lower }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('确定删除此公告?');">
+                                <input type="hidden" name="action" value="delete_notice">
+                                <input type="hidden" name="notice_id" value="{{ notice.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">暂无公告</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Notice Modal -->
+<div class="modal fade" id="addNoticeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">发布新公告</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_notice">
+                    <div class="mb-3">
+                        <label class="form-label">标题 <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">内容 <span class="text-danger">*</span></label>
+                        <textarea name="content" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">类型</label>
+                        <select name="notice_type" class="form-select">
+                            <option value="info">信息</option>
+                            <option value="warning">警告</option>
+                            <option value="success">成功</option>
+                            <option value="danger">重要</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" value="1" checked>
+                        <label class="form-check-label">立即显示</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">发布</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Notice Modal -->
+<div class="modal fade" id="editNoticeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑公告</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_notice">
+                    <input type="hidden" name="notice_id" id="edit-notice-id">
+                    <div class="mb-3">
+                        <label class="form-label">标题 <span class="text-danger">*</span></label>
+                        <input type="text" name="title" id="edit-title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">内容 <span class="text-danger">*</span></label>
+                        <textarea name="content" id="edit-content" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">类型</label>
+                        <select name="notice_type" id="edit-type" class="form-select">
+                            <option value="info">信息</option>
+                            <option value="warning">警告</option>
+                            <option value="success">成功</option>
+                            <option value="danger">重要</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="edit-active" value="1">
+                        <label class="form-check-label">显示公告</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editNotice(id, title, content, type, active) {
+    $('#edit-notice-id').val(id);
+    $('#edit-title').val(title);
+    $('#edit-content').val(content);
+    $('#edit-type').val(type);
+    $('#edit-active').prop('checked', active);
+    new bootstrap.Modal(document.getElementById('editNoticeModal')).show();
+}
+</script>
+{% endblock %}
+
+
+
+

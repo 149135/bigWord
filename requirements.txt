@@ -1,0 +1,40 @@
+# ===== Web Framework =====
+Flask==2.3.3
+Flask-Login==0.6.2
+Flask-SQLAlchemy==3.0.5
+Werkzeug==2.3.7
+
+# ===== Database =====
+SQLAlchemy==2.0.20
+
+# ===== AI & Computer Vision =====
+# YOLOv8 for License Plate Detection
+ultralytics==8.0.196
+
+# PaddleOCR for License Plate Recognition (Python 3.8-3.10 recommended)
+paddleocr==2.7.0
+paddlepaddle==2.5.1
+
+# OpenCV for Image Processing
+opencv-python==4.8.0.76
+opencv-contrib-python==4.8.0.76
+
+# ===== Image Processing =====
+Pillow==10.0.0
+numpy==1.24.3
+
+# ===== AI Chat Assistant =====
+openai>=1.30.0  # For Moonshot AI (Kimi) integration (新版 API)
+
+# ===== Development & Testing =====
+pytest==7.4.2
+pytest-flask==1.2.0
+
+# ===== Utilities =====
+python-dotenv==1.0.0
+
+# ===== IMPORTANT NOTES =====
+# 1. Python Version: Recommended 3.8, 3.9, or 3.10 (PaddlePaddle compatibility)
+# 2. If using Python 3.11+, PaddleOCR may not work properly
+# 3. For GPU support, install paddlepaddle-gpu instead of paddlepaddle
+# 4. Windows users may need Visual C++ Build Tools for some packages

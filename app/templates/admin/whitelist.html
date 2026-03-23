@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block page_title %}白名单维护{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4 border-0">
+    <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center border-bottom-0">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-list-alt me-2"></i>VIP / 月租车列表</h6>
+        <div class="d-flex gap-2">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="搜索车牌/车主..." onkeyup="filterTable()">
+            </div>
+            <button class="btn btn-primary text-nowrap shadow-sm" data-bs-toggle="modal" data-bs-target="#addWhitelistModal">
+                <i class="fas fa-plus me-1"></i> 新增车辆
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- List -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="whitelistTable">
+                <thead class="bg-light text-muted text-uppercase small">
+                    <tr>
+                        <th class="ps-4 border-0">车牌号码</th>
+                        <th class="border-0">车主姓名</th>
+                        <th class="border-0">联系电话</th>
+                        <th class="border-0">有效期</th>
+                        <th class="border-0">状态</th>
+                        <th class="text-end pe-4 border-0">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in whitelist %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded me-3">
+                                    <i class="fas fa-car"></i>
+                                </div>
+                                <span class="fw-bold text-dark">{{ item.plate_number }}</span>
+                            </div>
+                        </td>
+                        <td>{{ item.owner_name }}</td>
+                        <td>{{ item.phone or '-' }}</td>
+                        <td><span class="text-success small"><i class="fas fa-check-circle me-1"></i>永久有效</span></td>
+                        <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">正常</span></td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-light text-primary me-1" title="编辑" onclick="openEditModal('{{ item.id }}', '{{ item.plate_number }}', '{{ item.owner_name }}', '{{ item.phone }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('确定要移除该车辆吗？');">
+                                <input type="hidden" name="action" value="delete_whitelist">
+                                <input type="hidden" name="wl_id" value="{{ item.id }}">
+                                <button type="submit" class="btn btn-sm btn-light text-danger" title="删除">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                            <p>暂无白名单数据</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Whitelist Modal -->
+<div class="modal fade" id="addWhitelistModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="action" value="add_whitelist">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>新增白名单车辆</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small text-uppercase">车牌号码</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-car"></i></span>
+                            <input type="text" name="plate" class="form-control form-control-lg" placeholder="例如：苏A88888" required>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small text-uppercase">车主姓名</label>
+                            <input type="text" name="owner" class="form-control" placeholder="请输入姓名" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small text-uppercase">联系电话</label>
+                            <input type="text" name="phone" class="form-control" placeholder="可选填">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary px-4">确认添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Whitelist Modal -->
+<div class="modal fade" id="editWhitelistModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_whitelist">
+                <input type="hidden" name="wl_id" id="edit_wl_id">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>编辑车辆信息</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small text-uppercase">车牌号码</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-car"></i></span>
+                            <input type="text" name="plate" id="edit_plate" class="form-control form-control-lg" required>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small text-uppercase">车主姓名</label>
+                            <input type="text" name="owner" id="edit_owner" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small text-uppercase">联系电话</label>
+                            <input type="text" name="phone" id="edit_phone" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-info text-white px-4">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, plate, owner, phone) {
+        document.getElementById('edit_wl_id').value = id;
+        document.getElementById('edit_plate').value = plate;
+        document.getElementById('edit_owner').value = owner;
+        document.getElementById('edit_phone').value = phone;
+        new bootstrap.Modal(document.getElementById('editWhitelistModal')).show();
+    }
+
+    function filterTable() {
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("whitelistTable");
+        tr = table.getElementsByTagName("tr");
+        
+        // Loop through all table rows (skipping header)
+        for (i = 1; i < tr.length; i++) {
+            // Check Plate (col 0) and Owner (col 1)
+            tdPlate = tr[i].getElementsByTagName("td")[0];
+            tdOwner = tr[i].getElementsByTagName("td")[1];
+            
+            if (tdPlate || tdOwner) {
+                txtValuePlate = tdPlate.textContent || tdPlate.innerText;
+                txtValueOwner = tdOwner.textContent || tdOwner.innerText;
+                
+                if (txtValuePlate.toUpperCase().indexOf(filter) > -1 || txtValueOwner.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }       
+        }
+    }
+</script>
+{% endblock %}

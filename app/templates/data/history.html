@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block page_title %}数据追溯{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4 border-0">
+    <div class="card-header py-3 bg-white d-flex flex-row align-items-center justify-content-between border-bottom-0">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-history me-2"></i>车辆进出明细</h6>
+        <div class="d-flex gap-2">
+             <button class="btn btn-light text-secondary border" onclick="exportData()"><i class="fas fa-file-export me-1"></i> 导出 Excel</button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- Filters -->
+        <div class="p-4 bg-light border-top border-bottom">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">车牌号码</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-car"></i></span>
+                        <input type="text" id="filter-plate" class="form-control border-start-0" placeholder="输入车牌号...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                     <label class="form-label small fw-bold text-muted text-uppercase">日期筛选</label>
+                     <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" id="filter-date" class="form-control border-start-0">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                     <label class="form-label small fw-bold text-muted text-uppercase">车辆状态</label>
+                     <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-filter"></i></span>
+                        <select id="filter-status" class="form-select border-start-0">
+                            <option value="">全部</option>
+                            <option value="parked">在场</option>
+                            <option value="exited">已出场</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100 shadow-sm" onclick="loadData(1)"><i class="fas fa-search me-2"></i> 查询记录</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted text-uppercase small">
+                    <tr>
+                        <th class="ps-4 border-0">ID</th>
+                        <th class="border-0">车牌信息</th>
+                        <th class="border-0">入场时间</th>
+                        <th class="border-0">出场时间</th>
+                        <th class="border-0">费用</th>
+                        <th class="border-0">状态</th>
+                        <th class="text-end pe-4 border-0">影像档案</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Loaded via AJAX -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="p-3 d-flex justify-content-between align-items-center border-top">
+            <div class="small text-muted" id="pagination-info">
+                Showing 0 to 0 of 0 records
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-controls">
+                    <!-- Loaded via JS -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Record Modal -->
+<div class="modal fade" id="editRecordModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>编辑停车记录</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editRecordForm">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-record-id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">车牌号</label>
+                            <input type="text" id="edit-plate" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">状态</label>
+                            <select id="edit-status" class="form-select">
+                                <option value="parked">在场</option>
+                                <option value="exited">已出场</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">入场时间</label>
+                            <input type="datetime-local" id="edit-entry-time" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">出场时间</label>
+                            <input type="datetime-local" id="edit-exit-time" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">费用 (元)</label>
+                            <input type="number" step="0.01" id="edit-fee" class="form-control">
+                        </div>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        此操作将被记录到操作日志中
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-warning">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-0">
+                <h5 class="modal-title"><i class="fas fa-images me-2"></i>车辆进出影像档案</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-dark">
+                <div class="row g-0">
+                    <div class="col-md-6 border-end border-secondary">
+                        <div class="position-relative text-center">
+                            <img id="modal-entry-img" class="img-fluid" style="max-height: 60vh; object-fit: contain;">
+                            <div class="position-absolute bottom-0 start-0 w-100 bg-black bg-opacity-50 text-white p-2">
+                                <span class="badge bg-success me-2">入场</span>
+                                <span id="modal-entry-time" class="font-monospace"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                         <div class="position-relative text-center">
+                            <img id="modal-exit-img" class="img-fluid" style="max-height: 60vh; object-fit: contain;">
+                            <div class="position-absolute bottom-0 start-0 w-100 bg-black bg-opacity-50 text-white p-2">
+                                <span class="badge bg-danger me-2">出场</span>
+                                <span id="modal-exit-time" class="font-monospace"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+
+    $(document).ready(function(){
+        // Set Default Date to Today
+        const today = new Date().toISOString().split('T')[0];
+        $('#filter-date').val(today);
+        
+        loadData(1);
+    });
+
+    function loadData(page) {
+        currentPage = page;
+        const plate = $('#filter-plate').val();
+        const date = $('#filter-date').val();
+        const status = $('#filter-status').val();
+        
+        $('#table-body').html('<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">正在检索数据...</div></td></tr>');
+        
+        $.get('/api/history_data', {plate: plate, date: date, status: status, page: page}, function(res) {
+            const tbody = $('#table-body');
+            tbody.empty();
+            
+            if(res.data.length === 0) {
+                tbody.html('<tr><td colspan="7" class="text-center text-muted py-5"><i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><p>暂无匹配记录</p></td></tr>');
+                $('#pagination-info').text('Showing 0 results');
+                $('#pagination-controls').empty();
+                return;
+            }
+            
+            res.data.forEach(item => {
+                const statusBadge = item.status === 'parked' 
+                    ? '<span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill"><i class="fas fa-check-circle me-1"></i>在场</span>' 
+                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">已出场</span>';
+                
+                const feeText = item.status === 'exited' 
+                    ? `<span class="fw-bold text-danger">¥${item.fee}</span>` 
+                    : '-';
+                
+                const imgBtn = `<button class="btn btn-sm btn-outline-primary rounded-pill px-2" 
+                    onclick="viewImages('${item.entry_image}', '${item.exit_image || ''}', '${item.entry_time}', '${item.exit_time}')">
+                    <i class="fas fa-eye"></i></button>`;
+                    
+                const editBtn = `<button class="btn btn-sm btn-outline-warning rounded-pill px-2" 
+                    onclick='editRecord(${JSON.stringify(item)})'>
+                    <i class="fas fa-edit"></i></button>`;
+                
+                const row = `
+                    <tr>
+                        <td class="ps-4 text-muted">#${item.id}</td>
+                        <td><span class="fw-bold text-dark">${item.plate}</span></td>
+                        <td class="font-monospace small">${item.entry_time}</td>
+                        <td class="font-monospace small">${item.exit_time}</td>
+                        <td>${feeText}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end pe-4">${imgBtn} ${editBtn}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            // Pagination UI
+            updatePagination(res.current_page, res.pages, res.total);
+        });
+    }
+
+    function updatePagination(current, totalPages, totalRecords) {
+        $('#pagination-info').text(`Total ${totalRecords} records, Page ${current} of ${totalPages}`);
+        
+        let html = '';
+        
+        // Prev
+        html += `<li class="page-item ${current === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadData(${current - 1})"><i class="fas fa-chevron-left"></i></a>
+                 </li>`;
+                 
+        // Numbers (Simplified: show all if < 7, otherwise condensed logic)
+        // For simplicity, showing range around current
+        let start = Math.max(1, current - 2);
+        let end = Math.min(totalPages, current + 2);
+        
+        if(start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadData(1)">1</a></li>`;
+        if(start > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item ${i === current ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadData(${i})">${i}</a>
+                     </li>`;
+        }
+        
+        if(end < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        if(end < totalPages) html += `<li class="page-item"><a class="page-link" href="#" onclick="loadData(${totalPages})">${totalPages}</a></li>`;
+        
+        // Next
+        html += `<li class="page-item ${current === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadData(${current + 1})"><i class="fas fa-chevron-right"></i></a>
+                 </li>`;
+                 
+        $('#pagination-controls').html(html);
+    }
+
+    function viewImages(entryImg, exitImg, entryTime, exitTime) {
+        const entrySrc = entryImg ? `/static/uploads/${entryImg}` : 'https://via.placeholder.com/800x600?text=No+Image';
+        const exitSrc = exitImg ? `/static/uploads/${exitImg}` : 'https://via.placeholder.com/800x600?text=Pending';
+        
+        $('#modal-entry-img').attr('src', entrySrc);
+        $('#modal-exit-img').attr('src', exitSrc);
+        $('#modal-entry-time').text(entryTime);
+        $('#modal-exit-time').text(exitTime);
+        
+        new bootstrap.Modal(document.getElementById('imageModal')).show();
+    }
+    
+    function editRecord(item) {
+        $('#edit-record-id').val(item.id);
+        $('#edit-plate').val(item.plate);
+        $('#edit-status').val(item.status);
+        $('#edit-fee').val(item.fee);
+        
+        // Convert datetime strings to datetime-local format
+        if (item.entry_time) {
+            const entryDate = new Date(item.entry_time);
+            $('#edit-entry-time').val(entryDate.toISOString().slice(0, 16));
+        }
+        
+        if (item.exit_time && item.exit_time !== '-') {
+            const exitDate = new Date(item.exit_time);
+            $('#edit-exit-time').val(exitDate.toISOString().slice(0, 16));
+        } else {
+            $('#edit-exit-time').val('');
+        }
+        
+        new bootstrap.Modal(document.getElementById('editRecordModal')).show();
+    }
+    
+    $('#editRecordForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const data = {
+            id: $('#edit-record-id').val(),
+            plate_number: $('#edit-plate').val(),
+            status: $('#edit-status').val(),
+            entry_time: $('#edit-entry-time').val(),
+            exit_time: $('#edit-exit-time').val() || null,
+            fee: $('#edit-fee').val() || 0
+        };
+        
+        $.post('/api/edit_record', data, function(res) {
+            if (res.success) {
+                alert('修改成功！');
+                bootstrap.Modal.getInstance(document.getElementById('editRecordModal')).hide();
+                loadData(currentPage);
+            } else {
+                alert('修改失败：' + res.message);
+            }
+        });
+    });
+    
+    function exportData() {
+        alert("数据已准备好，正在生成 Excel 文件...");
+    }
+</script>
+{% endblock %}
