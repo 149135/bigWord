@@ -387,15 +387,15 @@ licensePlateDetection/
 
 如有问题或建议，请通过以下方式联系：
 - 📮 GitHub Issues
-- 📧 Email: [your-email@example.com]
-
+- 📧 Email: [1491354106@qq.com]
 ---
 
 <div align="center">
 
 **⭐ 如果这个项目对您有帮助，请给个 Star！⭐**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [于宪森]
+
 
 </div>
 
